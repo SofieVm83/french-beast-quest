@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>French Beast Quest — voortgang herstellen</title>
+<style>body{font:18px system-ui;background:#0e1931;color:#f6f5f0;margin:0;padding:22px}main{max-width:620px;margin:auto}h1{font-size:1.6rem}section{background:#1c2b4b;border:1px solid #526b94;border-radius:16px;padding:20px;margin:20px 0}button,a.button{display:block;box-sizing:border-box;text-align:center;width:100%;background:#e9c768;color:#16203b;font-weight:700;font-size:18px;padding:16px;border:0;border-radius:12px;margin:14px 0;text-decoration:none}input{max-width:100%;font-size:17px}p{line-height:1.5}small{color:#ccd7eb}#status{white-space:pre-wrap}</style></head><body><main><h1>French Beast Quest</h1><p>Spelvoortgang herstellen op deze iPhone of computer.</p><section><h2>1. Kies de back-up</h2><p>Selecteer het JSON-bestand dat je op de pc hebt opgeslagen en via WhatsApp hebt doorgestuurd.</p><input type="file" id="file" accept=".json,application/json"><p id="details"></p></section><section><h2>2. Zet de voortgang over</h2><p>De huidige voortgang op dit toestel wordt vervangen. Voor de zekerheid wordt eerst automatisch een reservekopie gedownload.</p><button id="restore" disabled>Herstel spelvoortgang</button><p id="status" role="status"></p></section><a class="button" href="./index.html">Terug naar het spel</a><small>Gebruik deze pagina op hetzelfde toestel en in dezelfde browser als het spel. De gegevens blijven op dit toestel en worden niet naar GitHub verstuurd.</small></main>
+<script>
+let selected=null;
+const file=document.getElementById('file'),details=document.getElementById('details'),status=document.getElementById('status'),btn=document.getElementById('restore');
+file.addEventListener('change',async()=>{
+ selected=null;btn.disabled=true;details.textContent='';
+ try{
+ const data=JSON.parse(await file.files[0].text());
+ if(data.format!=='FrenchBeastQuestSave'||!data.game||!Number.isFinite(data.game.xp)||!Array.isArray(data.game.pets)||!data.game.eggs||!data.journey||!Number.isInteger(data.journey.stage))throw Error('Dit is geen geldig French Beast Quest-back-upbestand.');
+ selected=data;details.textContent='Gevonden: '+data.game.xp+' XP, '+data.game.coins+' coins, '+data.game.candy+' candy en '+data.game.pets.length+' pets.';btn.disabled=false;
+ }catch(e){details.textContent='Kan bestand niet lezen: '+e.message}
+});
+function download(obj,name){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+btn.addEventListener('click',()=>{
+ if(!selected)return;
+ if(!confirm('De spelvoortgang op dit toestel wordt vervangen door de gekozen back-up. Doorgaan?'))return;
+ try{
+ const existingGame=localStorage.getItem('fbq_v1'),existingJourney=localStorage.getItem('fbq_world_journey_v28');
+ if(existingGame||existingJourney)download({format:'FrenchBeastQuestSave',version:1,exportedAt:new Date().toISOString(),game:existingGame?JSON.parse(existingGame):null,journey:existingJourney?JSON.parse(existingJourney):null},'French_Beast_Quest_Reservekopie_voor_import.json');
+ localStorage.setItem('fbq_v1',JSON.stringify(selected.game));
+ localStorage.setItem('fbq_world_journey_v28',JSON.stringify(selected.journey));
+ status.textContent='Gelukt! Open nu het spel. De voortgang wordt ingeladen.';
+ }catch(e){status.textContent='Herstellen mislukt: '+e.message}
+});
+</script></body></html>
